@@ -7,16 +7,17 @@
 html { height: 100%; }
 body { margin: 0; height: 100%; display: grid; grid-template-rows: 5rem 1fr; grid-template-columns: 1fr; }
 body > * { width: 100%; height: 100%; box-sizing: border-box; overflow: auto; }
-#text { display: block; margin: 0; }
+#info:empty::after { content: 'Drop binary file here!'; display: inline; }
 ul { display: block; list-style: none; margin: 0; padding: 0; }
-ul > li { display: grid; overflow: hidden; text-align: center; height: 1.2rem; line-height: 1.2rem; font-family: monospace; grid-template-rows: 1rem; grid-template-columns: 1fr 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem; }
-ul > li:first-child, ul > li > :first-child { text-align: right; user-select: none; color: gray; padding-right: 0.5rem; }
+ul > li { display: grid; overflow: hidden; text-align: center; height: 1.2rem; line-height: 1.2rem; font-family: monospace; grid-template-rows: 1rem; grid-template-columns: 10rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1.4rem 1fr; }
+ul > li:first-child, ul > li > :first-child { text-align: right; user-select: none; color: gray; padding-right: 0.5rem; overflow: hidden; }
 	</style>
 	<script>
 class LoadBinaryFile
 {
 	constructor( config )
 	{
+		this.info = config.info;
 		this.result = config.result;
 		this.data = [];
 		this.init( config.drop );
@@ -46,6 +47,13 @@ class LoadBinaryFile
 
 	async onDrop( file )
 	{
+		this.info.textContent =
+		[
+			'File:' + file.name,
+			'Size:' + file.size,
+			'MIME-Type:' + file.type,
+			'Date:' + new Date( file.lastModified ),
+		].join( ' ' );
 		this.data = await this.binary( file );
 		this.render();
 	}
@@ -89,8 +97,9 @@ class LoadBinaryFile
 			switch ( separate.options[ separate.selectedIndex ].value )
 			{
 				case 'comma': return ',';
-				case 'space': ' ';
-				case 'tab': '	';
+				case 'space': return ' ';
+				case 'tab': return '	';
+				case 'newline': return '\n';
 			}
 			return '';
 		}
@@ -126,14 +135,14 @@ class LoadBinaryFile
 		this.result.appendChild( li );
 	}
 
-	renderLine( index )
+	renderLine( index, max = 16 )
 	{
 		const li = document.createElement( 'li' );
 		const address = document.createElement( 'span' );
 		address.textContent = '0x' + this.convert( index, 16 );
 		li.appendChild( address );
 
-		for ( let i = 0 ; i < 16 && index + i < this.data.length ; ++i )
+		for ( let i = 0 ; i < max && index + i < this.data.length ; ++i )
 		{
 			const b = document.createElement( 'span' );
 			b.textContent = this.convert( this.data[ index + i ], 2 );
@@ -173,6 +182,7 @@ document.addEventListener( 'DOMContentLoaded', () =>
 	{
 		drop: document.body,
 		result: document.getElementById( 'result' ),
+		info: document.getElementById( 'info' ),
 		case: document.getElementById( 'case' ),
 		output: document.getElementById( 'output' ),
 		separate: document.getElementById( 'separate' ),
@@ -184,7 +194,7 @@ document.addEventListener( 'DOMContentLoaded', () =>
 </head>
 <body>
 	<div>
-		<div>Drop binary file here!</div>
+		<div id="info"></div>
 		<div>
 			<select id="case">
 				<option value="0">Upper</option>
@@ -201,6 +211,7 @@ document.addEventListener( 'DOMContentLoaded', () =>
 				<option value="comma">,</option>
 				<option value="space">Space</option>
 				<option value="tab">Tab</option>
+				<option value="newline">Newline</option>
 			</select>
 			<select id="newline">
 				<option value="newline">Newline</option>
